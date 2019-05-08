@@ -1,41 +1,54 @@
-//Carrega a biblioteca Wire
 #include<Wire.h> // This library allows you to communicate with I2C / TWI devices.
-#include<Servo.h>
 
-const int MPU = 0x68; //Endereco I2C do MPU6050
 
-//Variaveis globais
+const int MPU = 0x68; //Adress I2C do MPU6050
+
+//Global variables
 int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
-int Pitch, Roll, Yaw; // inclinação e rotação
+int Pitch, Roll, Yaw;
 float elapsedTime, time, timePrev;
 
-Servo right_prop;
-Servo left_prop;
+# define pinoPWML 5  //pino do Arduino que terá a ligação para o driver de motor
+# define pinoPWMR 3
 
-double throttle=1300;
+int sommeErreurPitch = 1;
+int setPointPitch = 0;
+float previousErrorPitch = 0;
+float pwmLeft, pwmRight;
+
+float kP = 2.3;
+float kI = 0.3;
+float kD = 1.2;
+
+double throttle = 150;
 
 void setup()
 {
   Serial.begin(9600);
-  
+
+  pinMode(pinoPWML, OUTPUT); //configura como saída pino terá a ligação para o driver de motor
+  pinMode(pinoPWMR, OUTPUT);
+
   time = millis();
-   
-  //Inicializa o MPU-6050
+
+  //initializes MPU-6050
   Wire.begin();
   Wire.beginTransmission(MPU);
   Wire.write(0x6B);
 
-  //Inicializa o MPU-6050
+  //initializes o MPU-6050
   Wire.write(0);
   Wire.endTransmission(true);
+
+ 
 }
 
 void loop()
 {
   FunctionsMPU(); // Acquisisco assi AcX, AcY, AcZ.
-  
+
   PIDControl();
-  
+
   Roll = FunctionsPitchRoll(AcX, AcY, AcZ); //Calcolo angolo Roll
   Pitch = FunctionsPitchRoll(AcY, AcX, AcZ); //Calcolo angolo Pitch
   Yaw = FunctionsPitchRoll(AcZ, AcX, AcY); //Calcolo angolo Pitch
@@ -46,12 +59,11 @@ void loop()
   Serial.print("Roll: "); Serial.print(Roll);
   Serial.print("|");
   Serial.print("Yaw: "); Serial.print(Yaw);
-  Serial.print("|");  
+  Serial.print("|");
   Serial.print("\n");
 
-  
 
-  delay(3000);
+
 
 }
 
@@ -74,64 +86,60 @@ void FunctionsMPU() {
   Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 6, true); // request a total of 14 registers
-  AcX = Wire.read()<<8|Wire.read(); // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
-  AcY = Wire.read()<<8|Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
-  AcZ = Wire.read()<<8|Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcX = Wire.read() << 8 | Wire.read(); // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
+  AcY = Wire.read() << 8 | Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcZ = Wire.read() << 8 | Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
 }
 
-int sommeErreurPitch = 1;
-int sommeErreurRoll = 1;
-int setPointPitch = 0;
-float previousErrorPitch = 0;
-float pwmLeft, pwmRight;
+void PIDControl() {
 
-void PIDControl(){
-  float kP = 1;
-  float kI = 1;
-  float kD = 1;
-  float errorPitch = (setPointPitch-Pitch);
+  float errorPitch = (setPointPitch - Pitch);
 
   timePrev = time;  // the previous time is stored before the actual time read
   time = millis();  // actual time read
-  elapsedTime = (time - timePrev) / 1000; 
-   
+  elapsedTime = (time - timePrev) / 1000;
 
-  float PID = kP*errorPitch + kI*sommeErreurPitch + kD*((errorPitch-previousErrorPitch)/elapsedTime);
+
+  float PID = kP * errorPitch + kI * sommeErreurPitch + kD * ((errorPitch - previousErrorPitch) / elapsedTime);
+  
+  if (PID < -255)
+    {
+      PID = -255;
+    }
+  if (PID > 255)
+    {
+      PID = 255;
+    }
+
+  pwmLeft = throttle + PID;
+  pwmRight = throttle - PID;
+
+  if (pwmRight < 51)
+    {
+      pwmRight = 51;
+    }
+  if (pwmRight > 255)
+    {
+      pwmRight = 255;
+    }
+  //Left
+  if (pwmLeft < 51)
+    {
+      pwmLeft = 51;
+    }
+  if (pwmLeft > 255)
+    {
+      pwmLeft = 255;
+    }
+
+  Serial.print("Left:"); Serial.println(pwmLeft);
+  Serial.print("Right:"); Serial.println(pwmRight);
+
+  analogWrite(pinoPWML, pwmLeft);
+  analogWrite(pinoPWMR, pwmRight);
 
   
-  if(PID < -1000)
-    {
-      PID=-1000;
-    }
-  if(PID > 1000)
-    {
-      PID=1000;
-     }
-
-     pwmLeft = throttle + PID;
-      pwmRight = throttle - PID;
-
-    if(pwmRight < 1000)
-    {
-      pwmRight= 1000;
-    }
-    if(pwmRight > 2000)
-    {
-      pwmRight=2000;
-    }
-    //Left
-    if(pwmLeft < 1000)
-    {
-      pwmLeft= 1000;
-    }
-    if(pwmLeft > 2000)
-    {
-      pwmLeft=2000;
-    }
-
-     Serial.print("Left:"); Serial.println(pwmLeft);
-     Serial.print("Right:");Serial.println(pwmRight);
   previousErrorPitch = errorPitch;
   sommeErreurPitch += errorPitch;
-  
+
 }
