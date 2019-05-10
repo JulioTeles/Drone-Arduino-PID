@@ -12,15 +12,22 @@ float elapsedTime, time, timePrev;
 # define pinoPWMR 3
 
 int sommeErreurPitch = 1;
+int lastPitch = 1;
+
 int setPointPitch = 0;
 float previousErrorPitch = 0;
 float pwmLeft, pwmRight;
 
+int sampleTime = 1000; // 1 sec
+
+double sampleTimeInSec = ((double)sampleTime)/1000;
+
 float kP = 2.3;
-float kI = 0.3;
-float kD = 1.2;
+float kI = 0.3 * sampleTimeInSec;
+float kD = 1.2 / sampleTimeInSec;
 
 double throttle = 150;
+
 
 void setup()
 {
@@ -93,53 +100,61 @@ void FunctionsMPU() {
 
 void PIDControl() {
 
-  float errorPitch = (setPointPitch - Pitch);
+  
 
   timePrev = time;  // the previous time is stored before the actual time read
   time = millis();  // actual time read
   elapsedTime = (time - timePrev) / 1000;
 
-
-  float PID = kP * errorPitch + kI * sommeErreurPitch + kD * ((errorPitch - previousErrorPitch) / elapsedTime);
+  if (elapsedTime>=sampleTime)
+  {
+    float errorPitch = (setPointPitch - Pitch);
+    float dPitch = (Pitch - lastPitch);
+     
+    float PID = kP * errorPitch + kI * sommeErreurPitch + kD * dPitch;
   
-  if (PID < -255)
-    {
-      PID = -255;
-    }
-  if (PID > 255)
-    {
-      PID = 255;
-    }
+    if (PID < -255)
+      {
+        PID = -255;
+      }
+    if (PID > 255)
+      {
+        PID = 255;
+      }
 
-  pwmLeft = throttle + PID;
-  pwmRight = throttle - PID;
+     pwmLeft = throttle + PID;
+      pwmRight = throttle - PID;
 
-  if (pwmRight < 51)
-    {
-      pwmRight = 51;
-    }
-  if (pwmRight > 255)
-    {
-      pwmRight = 255;
-    }
-  //Left
-  if (pwmLeft < 51)
-    {
-      pwmLeft = 51;
-    }
-  if (pwmLeft > 255)
-    {
-      pwmLeft = 255;
-    }
-
-  Serial.print("Left:"); Serial.println(pwmLeft);
-  Serial.print("Right:"); Serial.println(pwmRight);
-
-  analogWrite(pinoPWML, pwmLeft);
-  analogWrite(pinoPWMR, pwmRight);
-
+    if (pwmRight < 51)
+      {
+        pwmRight = 51;
+      }
+    if (pwmRight > 255)
+      {
+        pwmRight = 255;
+      }
+    //Left
+    if (pwmLeft < 51)
+      {
+        pwmLeft = 51;
+      }
+    if (pwmLeft > 255)
+      {
+        pwmLeft = 255;
+      }
   
-  previousErrorPitch = errorPitch;
-  sommeErreurPitch += errorPitch;
+    Serial.print("Left:"); Serial.println(pwmLeft);
+    Serial.print("Right:"); Serial.println(pwmRight);
+  
+    analogWrite(pinoPWML, pwmLeft);
+    analogWrite(pinoPWMR, pwmRight);
+  
+    lastPitch = Pitch;
+    previousErrorPitch = errorPitch;
+    sommeErreurPitch += errorPitch;
+      
+    }
+
+
 
 }
