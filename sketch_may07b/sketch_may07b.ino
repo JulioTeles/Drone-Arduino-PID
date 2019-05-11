@@ -14,13 +14,13 @@ float elapsedTime, time, timePrev;
 int sommeErreurPitch = 1;
 int lastPitch = 1;
 
-int setPointPitch = 0;
+int setPointPitch = -3;
 float previousErrorPitch = 0;
 float pwmLeft, pwmRight;
 
-float kP = 2.3;
-float kI = 0.3;
-float kD = 1.2;
+float kP = 1.22;
+float kI = 0.0;
+float kD = 0.0;
 
 double throttle = 150;
 
@@ -45,7 +45,6 @@ void setup()
   Wire.write(0);
   Wire.endTransmission(true);
 
- delay(1000);
 }
 
 void loop()
@@ -60,15 +59,11 @@ void loop()
 
 
   Serial.print("Pitch: "); Serial.print(Pitch);
-  Serial.print("|");
-  Serial.print("Roll: "); Serial.print(Roll);
-  Serial.print("|");
-  Serial.print("Yaw: "); Serial.print(Yaw);
-  Serial.print("|");
-  Serial.print("\n");
-
-  delay(3000);
-
+  Serial.print(" |");
+  Serial.print(" Roll: "); Serial.print(Roll);
+  Serial.print(" |");
+  Serial.print(" Yaw: "); Serial.print(Yaw);
+  Serial.print(" |");
 
 
 }
@@ -144,10 +139,12 @@ void PIDControl() {
         pwmLeft = 255;
       }
   
-    Serial.print("Left:"); Serial.println(pwmLeft);
-    Serial.print("Right:"); Serial.println(pwmRight);
+    Serial.print(" Left:"); Serial.print(pwmLeft);
+    Serial.print(" Right:"); Serial.print(pwmRight);
+    
+    Serial.print("\n");
   
-    analogWrite(pinoPWML, pwmLeft);
+    analogWrite(pinoPWML, pwmLeft*0.6);
     analogWrite(pinoPWMR, pwmRight);
   
     lastPitch = Pitch;
