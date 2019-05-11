@@ -15,14 +15,15 @@ int sampleTime = 50/1000;
 
 int sommeErreurPitch = 1;
 int lastPitch = 1;
+double iTerm;
 
 int setPointPitch = -3;
 float previousErrorPitch = 0;
 float pwmLeft, pwmRight;
 
 float kP = 1.22;
-float kI = 0.0;
-float kD = 0.0;
+float kI = 0.000 * sampleTime;
+float kD = 0.000;
 
 double throttle = 150;
 
@@ -95,11 +96,7 @@ void FunctionsMPU() {
 }
 
 void PIDControl() {
-
-  
-
-  
-  
+    
   time = millis();  // actual time read
   elapsedTime = (time - timePrev) / 1000; 
   
@@ -108,8 +105,8 @@ void PIDControl() {
 if(elapsedTime>=sampleTime){
     float errorPitch = (setPointPitch - Pitch);
     float dPitch = (Pitch - lastPitch);
-     
-    float PID = kP * errorPitch + kI * sommeErreurPitch + kD * dPitch;
+    iTerm += (kI * errorPitch);
+    float PID = kP * errorPitch + iTerm + kD * dPitch;
   
     if (PID < -255)
       {
