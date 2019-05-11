@@ -8,6 +8,8 @@ int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
 int Pitch, Roll, Yaw;
 float elapsedTime, time, timePrev;
 
+int sampleTime = 50/1000;
+
 # define pinoPWML 5  //pino do Arduino que terá a ligação para o driver de motor
 # define pinoPWMR 3
 
@@ -97,13 +99,13 @@ void PIDControl() {
   
 
   
-  timePrev = time;  // the previous time is stored before the actual time read
+  
   time = millis();  // actual time read
   elapsedTime = (time - timePrev) / 1000; 
   
  
 
-
+if(elapsedTime>=sampleTime){
     float errorPitch = (setPointPitch - Pitch);
     float dPitch = (Pitch - lastPitch);
      
@@ -146,9 +148,10 @@ void PIDControl() {
   
     analogWrite(pinoPWML, pwmLeft*0.6);
     analogWrite(pinoPWMR, pwmRight);
-  
+
+    timePrev = time;  // the previous time is stored before the actual time read
     lastPitch = Pitch;
     previousErrorPitch = errorPitch;
     sommeErreurPitch += errorPitch;         
-
+   }
 }
