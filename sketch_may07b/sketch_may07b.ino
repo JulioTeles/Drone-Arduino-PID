@@ -27,6 +27,10 @@ float kD = 0.000;
 
 double throttle = 150;
 
+bool inAuto = false;
+ 
+#define MANUAL 0
+#define AUTOMATIC 1
 
 void setup()
 {
@@ -54,6 +58,7 @@ void loop()
 {
   FunctionsMPU(); // Acquisisco assi AcX, AcY, AcZ.
 
+  if(inAuto) return;
   PIDControl();
 
   Roll = FunctionsPitchRoll(AcX, AcY, AcZ); //Calcolo angolo Roll
@@ -106,6 +111,7 @@ if(elapsedTime>=sampleTime){
     float errorPitch = (setPointPitch - Pitch);
     float dPitch = (Pitch - lastPitch);
     iTerm += (kI * errorPitch);
+    
     float PID = kP * errorPitch + iTerm + kD * dPitch;
   
     if (PID < -255)
@@ -151,4 +157,9 @@ if(elapsedTime>=sampleTime){
     previousErrorPitch = errorPitch;
     sommeErreurPitch += errorPitch;         
    }
+}
+
+void SetMode(int Mode)
+{
+  inAuto = (Mode == AUTOMATIC);
 }
