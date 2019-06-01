@@ -8,40 +8,28 @@ int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
 int Pitch, Roll, Yaw;
 float elapsedTime, time, timePrev;
 
-int sampleTime = 50/1000;
-
 # define pinoPWML 5  //pino do Arduino que terá a ligação para o driver de motor
 # define pinoPWMR 3
 
 int sommeErreurPitch = 1;
-int lastPitch = 1;
-double iTerm;
-
-int setPointPitch = -3;
+int setPointPitch = 0;
 float previousErrorPitch = 0;
 float pwmLeft, pwmRight;
 
-float kP = 1.22;
-float kI = 0.000 * sampleTime;
-float kD = 0.000;
+float kP = 1.3;
+float kI = 0.0;
+float kD = 0.0;
 
 double throttle = 150;
-
-bool inAuto = false;
- 
-#define MANUAL 0
-#define AUTOMATIC 1
 
 void setup()
 {
   Serial.begin(9600);
 
-  time = millis();
-  
   pinMode(pinoPWML, OUTPUT); //configura como saída pino terá a ligação para o driver de motor
   pinMode(pinoPWMR, OUTPUT);
 
-  unsigned long now = millis();
+  time = millis();
 
   //initializes MPU-6050
   Wire.begin();
@@ -52,13 +40,13 @@ void setup()
   Wire.write(0);
   Wire.endTransmission(true);
 
+ 
 }
 
 void loop()
 {
   FunctionsMPU(); // Acquisisco assi AcX, AcY, AcZ.
 
-  if(inAuto) return;
   PIDControl();
 
   Roll = FunctionsPitchRoll(AcX, AcY, AcZ); //Calcolo angolo Roll
@@ -67,11 +55,14 @@ void loop()
 
 
   Serial.print("Pitch: "); Serial.print(Pitch);
-  Serial.print(" |");
-  Serial.print(" Roll: "); Serial.print(Roll);
-  Serial.print(" |");
-  Serial.print(" Yaw: "); Serial.print(Yaw);
-  Serial.print(" |");
+  Serial.print("|");
+  Serial.print("Roll: "); Serial.print(Roll);
+  Serial.print("|");
+  Serial.print("Yaw: "); Serial.print(Yaw);
+  Serial.print("|");
+  Serial.print("\n");
+
+
 
 
 }
@@ -101,65 +92,54 @@ void FunctionsMPU() {
 }
 
 void PIDControl() {
-    
+
+  float errorPitch = (setPointPitch - Pitch);
+
+  timePrev = time;  // the previous time is stored before the actual time read
   time = millis();  // actual time read
-  elapsedTime = (time - timePrev) / 1000; 
+  elapsedTime = (time - timePrev) / 1000;
+
+
+  float PID = kP * errorPitch + kI * sommeErreurPitch + kD * ((errorPitch - previousErrorPitch) / elapsedTime);
   
- 
+  if (PID < -255)
+    {
+      PID = -255;
+    }
+  if (PID > 255)
+    {
+      PID = 255;
+    }
 
-if(elapsedTime>=sampleTime){
-    float errorPitch = (setPointPitch - Pitch);
-    float dPitch = (Pitch - lastPitch);
-    iTerm += (kI * errorPitch);
-    
-    float PID = kP * errorPitch + iTerm + kD * dPitch;
+  pwmLeft = throttle + PID;
+  pwmRight = throttle - PID;
+
+  if (pwmRight < 51)
+    {
+      pwmRight = 51;
+    }
+  if (pwmRight > 255)
+    {
+      pwmRight = 255;
+    }
+  //Left
+  if (pwmLeft < 51)
+    {
+      pwmLeft = 51;
+    }
+  if (pwmLeft > 255)
+    {
+      pwmLeft = 255;
+    }
+
+  Serial.print("Left:"); Serial.print(pwmLeft);
+  Serial.print("Right:"); Serial.println(pwmRight);
+
+  analogWrite(pinoPWML, pwmLeft*0.6);
+  analogWrite(pinoPWMR, pwmRight);
+
   
-    if (PID < -255)
-      {
-        PID = -255;
-      }
-    if (PID > 255)
-      {
-        PID = 255;
-      }
+  previousErrorPitch = errorPitch;
+  sommeErreurPitch += errorPitch;
 
-      pwmLeft = throttle + PID;
-      pwmRight = throttle - PID;
-
-    if (pwmRight < 51)
-      {
-        pwmRight = 51;
-      }
-    if (pwmRight > 255)
-      {
-        pwmRight = 255;
-      }
-    //Left
-    if (pwmLeft < 51)
-      {
-        pwmLeft = 51;
-      }
-    if (pwmLeft > 255)
-      {
-        pwmLeft = 255;
-      }
-  
-    Serial.print(" Left:"); Serial.print(pwmLeft);
-    Serial.print(" Right:"); Serial.print(pwmRight);
-    
-    Serial.print("\n");
-  
-    analogWrite(pinoPWML, pwmLeft*0.6);
-    analogWrite(pinoPWMR, pwmRight);
-
-    timePrev = time;  // the previous time is stored before the actual time read
-    lastPitch = Pitch;
-    previousErrorPitch = errorPitch;
-    sommeErreurPitch += errorPitch;         
-   }
-}
-
-void SetMode(int Mode)
-{
-  inAuto = (Mode == AUTOMATIC);
 }
