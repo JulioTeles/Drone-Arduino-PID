@@ -12,7 +12,7 @@ int sampleTime = 0.5;
 
 
 # define pinoPWMLF 5  //pino do Arduino que terá a ligação para o driver de motor
-# define pinoPWMLB 3
+# define pinoPWMLB 10
 # define pinoPWMRF 6
 # define pinoPWMRB 9
 
@@ -20,26 +20,23 @@ int SumOfErrorsPitch = 1, SumOfErrorsRoll = 1 ;
 int lastPitch = 1, lastRoll = 1;
 double iTermPitch, iTermRoll;
 
-int setPointPitch = 0 , setPointRoll = 0 ; //-30
+int setPointPitch = 0 , setPointRoll = 0;
 float previousErrorPitch = 0, previousErrorRoll = 0;
 float pwmLeftFront,pwmLeftBack, pwmRightFront, pwmRightBack;
 
 int ct=0,dt=0,pt=0;
 
-float kP_Pitch = 0.5; //0.6
-float kI_Pitch = 2; //0.00070
-float kD_Pitch = 0.4; //0.00
+float kP_Pitch = 0; //0.6
+float kI_Pitch = 0; //0.00070
+float kD_Pitch = 0; //0.00
 
-float kP_Roll = 0; //0.6
-float kI_Roll = 0; //0.00070
-float kD_Roll = 0; //0.00
+float kP_Roll = 1; //0.6
+float kI_Roll = 0.32; //0.00070
+float kD_Roll = 0.43; //0.00
 
 double throttle = 150;
 
-bool inAuto = true;
- 
-#define MANUAL 0
-#define AUTOMATIC 1
+
 
 void setup()
 {
@@ -73,8 +70,6 @@ void loop()
   ct=millis();
   dt=ct-pt;
 
- // if(inAuto) return;
-  
   if(dt>=sampleTime)
   {
      pt=ct;
@@ -151,13 +146,14 @@ if(elapsedTime>=sampleTime){
   if (PID_Pitch > 255) { PID_Pitch = 255;}
 
 
+
     /*PID ROLL*/
-    float PID_Roll = kP_Roll * errorPitch + iTermRoll + kD_Roll * dPitch;
+    float PID_Roll = kP_Roll * errorRoll + iTermRoll + kD_Roll * dRoll;
 
   if (PID_Roll < -255){ PID_Roll = -255; }
   if (PID_Roll > 255) { PID_Roll = 255;}
 
-
+  
 
 
 
@@ -194,10 +190,10 @@ if(elapsedTime>=sampleTime){
   Serial.print("Left Back:"); Serial.print(pwmLeftBack);
   Serial.print(" Right Back:"); Serial.println(pwmRightBack);
 
-  analogWrite(pinoPWMLF, pwmLeftFront);
-  analogWrite(pinoPWMLB, pwmLeftBack);
-  analogWrite(pinoPWMRF, pwmRightFront);
-  analogWrite(pinoPWMRB, pwmRightBack);
+  analogWrite(pinoPWMLF, 150 /*pwmLeftFront */);
+  analogWrite(pinoPWMLB, 150 /*pwmLeftBack*/);
+  analogWrite(pinoPWMRF, 150 /*pwmRightFront*/);
+  analogWrite(pinoPWMRB, 150 /*pwmRightBack*/);
 
 
 
@@ -216,8 +212,4 @@ if(elapsedTime>=sampleTime){
     timePrev = time;  // the previous time is stored before the actual time read
    }
 }
-
-void SetMode(int Mode)
-{
-  inAuto = (Mode == AUTOMATIC);
-}
+ 
