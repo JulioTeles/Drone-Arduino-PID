@@ -190,10 +190,10 @@ if(elapsedTime>=sampleTime){
   Serial.print("Left Back:"); Serial.print(pwmLeftBack);
   Serial.print(" Right Back:"); Serial.println(pwmRightBack);
 
-  analogWrite(pinoPWMLF, 150 /*pwmLeftFront*/);
-  analogWrite(pinoPWMLB, 150 /* pwmLeftBack*/);
-  analogWrite(pinoPWMRF, 150*0.7 /*pwmRightFront*/);
-  analogWrite(pinoPWMRB, 150*0.7 /*pwmRightBack*/);
+  analogWrite(pinoPWMLF,  pwmLeftFront);
+  analogWrite(pinoPWMLB,   pwmLeftBack);
+  analogWrite(pinoPWMRF, 0.7*pwmRightFront);
+  analogWrite(pinoPWMRB, 0.7*pwmRightBack);
 
 
 
